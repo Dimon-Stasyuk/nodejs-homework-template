@@ -5,6 +5,8 @@ const { User } = require("../../model");
 const { joiSchema } = require("../../model/user");
 const jwt = require("jsonwebtoken");
 const gravatar = require("gravatar");
+const { nanoid } = require("nanoid");
+const { sendEmail } = require("../../helpers");
 
 const router = express.Router();
 const { SECRET_KEY } = process.env;
@@ -23,13 +25,24 @@ router.post("/signup", async (req, resp, next) => {
     const salt = await bcrypt.genSalt(10);
 
     const hashPassword = await bcrypt.hash(password, salt);
+    const verificationToken = nanoid();
     const avatarURL = gravatar.url(email);
 
     const newUser = await User.create({
       email,
       password: hashPassword,
       avatarURL,
+      verificationToken,
     });
+
+    const data = {
+      to: "dimon.stasyuk@gmail.com",
+      from: "dimon.stasyuk@gmail.com",
+      subject: "Новая заявка с сайта",
+      html: `<a target="_blank" href="https://sitename.com/users/verify/${verificationToken}">Подтвердиь email</a>`,
+    };
+
+    await sendEmail(data);
     resp.status(201).json({
       user: {
         email: newUser.email,
@@ -51,6 +64,9 @@ router.post("/login", async (req, res, next) => {
     const user = await User.findOne({ email });
     if (!user) {
       throw Unauthorized("Email or password is wrong");
+    }
+    if (!user.verify) {
+      throw new Unauthorized("Email not verify");
     }
     const passwordCompare = await bcrypt.compare(password, user.password);
     if (!passwordCompare) {
