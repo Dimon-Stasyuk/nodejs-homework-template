@@ -3,10 +3,9 @@ const logger = require("morgan");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const mongoose = require("mongoose");
-const sgMail = require("@sendgrid/mail");
 
 dotenv.config();
-const { DB_HOST, SENDGRID_API_KEY } = process.env;
+const { DB_HOST } = process.env;
 
 mongoose
   .connect(DB_HOST)
